@@ -23,22 +23,6 @@ impl Camera {
         }
     }
 
-    pub fn forward(&self) -> [f32; 3] {
-        let mut matrix = mat4::new_identity::<f32>();
-
-        let matrix_clone = matrix.clone();
-
-        mat4::rotate(
-            &mut matrix,
-            &matrix_clone,
-            &(180. - self.rotation[0]).to_radians(),
-            &self.rotation[1].to_radians(),
-            &self.rotation[2].to_radians(),
-        );
-
-        return [matrix[0], matrix[5], matrix[10]];
-    }
-
     pub fn get_matrix(&self) -> [f32; 16] {
         let mut matrix = mat4::new_identity::<f32>();
 

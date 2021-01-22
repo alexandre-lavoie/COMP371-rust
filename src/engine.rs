@@ -1,5 +1,4 @@
 use crate::camera::Camera;
-use crate::log;
 use crate::object::Object;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -8,7 +7,6 @@ use wasm_bindgen::JsCast;
 use web_sys::{
     EventTarget, HtmlCanvasElement, KeyboardEvent, MouseEvent, WebGl2RenderingContext, WebGlBuffer,
 };
-use vec3;
 
 pub struct Input {
     pub m_dx: Rc<RefCell<f32>>,
@@ -165,7 +163,7 @@ impl Engine {
         {
             let m_down = m_down.clone();
 
-            let mousedown_cb = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
+            let mousedown_cb = Closure::wrap(Box::new(move |_event: web_sys::MouseEvent| {
                 *m_down.borrow_mut() = true;
             }) as Box<dyn FnMut(MouseEvent)>);
 
@@ -182,7 +180,7 @@ impl Engine {
         {
             let m_down = m_down.clone();
 
-            let mouseup_cb = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
+            let mouseup_cb = Closure::wrap(Box::new(move |_event: web_sys::MouseEvent| {
                 *m_down.borrow_mut() = false;
             }) as Box<dyn FnMut(MouseEvent)>);
 
@@ -267,61 +265,19 @@ impl Engine {
         };
     }
 
-    fn update_input(&mut self, dt: f32) {
-        let mut first: bool = true;
-        let mut first_camera: Option<Camera> = None;
-
+    fn update_input(&mut self, _dt: f32) {
         for camera in self.cameras.iter_mut() {
-            if first {
-                first = false;
-
-                if self.input.m_down.borrow().clone() {
-                    camera.rotation[1] += self.input.m_dx.borrow().clone() / 10.;
-                    camera.rotation[0] -= self.input.m_dy.borrow().clone() / 10.;
-                }
-                camera.position[0] += self.input.p_dx.borrow().clone() / 10.;
-                camera.position[2] += self.input.p_dy.borrow().clone() / 10.;
-
-                first_camera = Some(camera.clone());
-            } else {
-                let fc = first_camera.unwrap();
-
-                let mut v = vec3::new_zero::<f32>();
-
-                let mut vc = v.clone();
-
-                vec3::add(&mut v, &vc, &fc.position);
-
-                vc = v.clone();
-
-                vec3::sub(&mut v, &vc, &camera.position);
-
-                vc = v.clone();
-
-                vec3::norm(&mut v, &vc);
-
-                let forward = v.clone();
-
-                vc = v.clone();
-
-                vec3::cross(&mut v, &vc, &[0., 1., 0.]);
-
-                let right = v.clone();
-
-                let mut up = vec3::new_zero::<f32>();
-
-                vec3::cross(&mut up, &forward, &right);
-
-                let rx = vec3::dot(&right, &[1., 0., 0.]).acos().to_degrees();
-                let ry = vec3::dot(&up, &[0., 1., 0.]).acos().to_degrees();
-                let rz = vec3::dot(&forward, &[0., 0., 1.]).acos().to_degrees();
-
-                camera.rotation = [rx, ry, rz];
+            if self.input.m_down.borrow().clone() {
+                camera.rotation[1] += self.input.m_dx.borrow().clone() / 10.;
+                camera.rotation[0] -= self.input.m_dy.borrow().clone() / 10.;
             }
+
+            camera.position[0] += self.input.p_dx.borrow().clone() / 10.;
+            camera.position[2] += self.input.p_dy.borrow().clone() / 10.;
         }
     }
 
-    fn render(&mut self, dt: f32) {
+    fn render(&mut self, _dt: f32) {
         self.gl.enable(WebGl2RenderingContext::DEPTH_TEST);
 
         self.gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
