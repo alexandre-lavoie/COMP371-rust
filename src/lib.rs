@@ -1,7 +1,21 @@
+use std::cell::RefCell;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{WebGlProgram, WebGl2RenderingContext, WebGlShader};
+use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
 
+mod camera;
+mod cube;
+mod engine;
+mod object;
+mod shader;
+
+use camera::Camera;
+use cube::Cube;
+use engine::Engine;
+use shader::{compile_shader, link_program};
+
+#[macro_export]
 macro_rules! log {
     ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into());
@@ -14,135 +28,65 @@ pub fn start() -> Result<(), JsValue> {
     let canvas = document.get_element_by_id("canvas").unwrap();
     let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
 
-    let context = canvas
+    let gl = canvas
         .get_context("webgl2")?
         .unwrap()
         .dyn_into::<WebGl2RenderingContext>()?;
 
     let vert_shader = compile_shader(
-        &context,
+        &gl,
         WebGl2RenderingContext::VERTEX_SHADER,
         include_str!("./shaders/vert.glsl"),
     )?;
 
     let frag_shader = compile_shader(
-        &context,
+        &gl,
         WebGl2RenderingContext::FRAGMENT_SHADER,
         include_str!("./shaders/frag.glsl"),
     )?;
 
-    let program = link_program(&context, &vert_shader, &frag_shader)?;
+    let program = link_program(&gl, &vert_shader, &frag_shader)?;
 
-    context.use_program(Some(&program));
+    let mut engine = Engine::new(canvas, gl);
 
-    let vertices: [f32; 9] = [
-        -0.7, -0.7, 0.0, 
-        0.7, -0.7, 0.0, 
-        0.0, 0.7, 0.0
-    ];
+    engine.attach_camera(Camera::new([0., 5., 0.], [0., 0., 0.], [0., 0., 1., 1.]));
 
-    let vert_buffer = context.create_buffer().ok_or("failed to create buffer")?;
+    engine.attach_camera(Camera::new([10., 5., 0.], [0., 0., 0.], [0., 0.75, 0.25, 0.25]));
 
-    context.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&vert_buffer));
+    engine.attach_object(Box::new(Cube::new(
+        program.clone(),
+        [0., 0., 0.],
+        [0., 0., 0.],
+        [5., 1., 5.],
+    )));
 
-    unsafe {
-        let vert_array = js_sys::Float32Array::view(&vertices);
+    engine.attach_object(Box::new(Cube::new(
+        program.clone(),
+        [2., 1., 2.],
+        [0., 0., 0.],
+        [3., 1., 3.],
+    )));
 
-        context.buffer_data_with_array_buffer_view(
-            WebGl2RenderingContext::ARRAY_BUFFER,
-            &vert_array,
-            WebGl2RenderingContext::STATIC_DRAW,
-        );
-    }
+    engine.init()?;
 
-    context.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&vert_buffer));
+    let f = Rc::new(RefCell::new(None));
 
-    let indicies: [u16; 3] = [0, 1, 2];
+    let g = f.clone();
 
-    let index_buffer = context.create_buffer().ok_or("failed to create buffer")?;
+    *g.borrow_mut() = Some(Closure::wrap(Box::new(move |time: f32| {
+        engine.update(time);
 
-    context.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
+        request_animation_frame(f.borrow().as_ref().unwrap());
+    }) as Box<dyn FnMut(f32)>));
 
-    unsafe {
-        let index_array = js_sys::Uint16Array::view(&indicies);
-
-        context.buffer_data_with_array_buffer_view(
-            WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
-            &index_array,
-            WebGl2RenderingContext::STATIC_DRAW
-        );
-    }
-
-    context.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
-
-    context.vertex_attrib_pointer_with_i32(0, 3, WebGl2RenderingContext::FLOAT, false, 0, 0);
-
-    context.enable_vertex_attrib_array(0);
-
-    context.clear_color(0.0, 0.0, 0.0, 1.0);
-
-    context.enable(WebGl2RenderingContext::DEPTH_TEST);
-
-    context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
-
-    context.viewport(0, 0, canvas.width() as i32, canvas.height() as i32);
-
-    context.draw_elements_with_i32(
-        WebGl2RenderingContext::TRIANGLES,
-        indicies.len() as i32,
-        WebGl2RenderingContext::UNSIGNED_SHORT,
-        0,
-    );
+    request_animation_frame(g.borrow().as_ref().unwrap());
 
     Ok(())
 }
 
-pub fn compile_shader(
-    context: &WebGl2RenderingContext,
-    shader_type: u32,
-    source: &str,
-) -> Result<WebGlShader, String> {
-    let shader = context
-        .create_shader(shader_type)
-        .ok_or_else(|| String::from("Unable to create shader object"))?;
-    context.shader_source(&shader, source);
-    context.compile_shader(&shader);
-
-    if context
-        .get_shader_parameter(&shader, WebGl2RenderingContext::COMPILE_STATUS)
-        .as_bool()
-        .unwrap_or(false)
-    {
-        Ok(shader)
-    } else {
-        Err(context
-            .get_shader_info_log(&shader)
-            .unwrap_or_else(|| String::from("Unknown error creating shader")))
-    }
-}
-
-pub fn link_program(
-    context: &WebGl2RenderingContext,
-    vert_shader: &WebGlShader,
-    frag_shader: &WebGlShader,
-) -> Result<WebGlProgram, String> {
-    let program = context
-        .create_program()
-        .ok_or_else(|| String::from("Unable to create shader object"))?;
-
-    context.attach_shader(&program, vert_shader);
-    context.attach_shader(&program, frag_shader);
-    context.link_program(&program);
-
-    if context
-        .get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS)
-        .as_bool()
-        .unwrap_or(false)
-    {
-        Ok(program)
-    } else {
-        Err(context
-            .get_program_info_log(&program)
-            .unwrap_or_else(|| String::from("Unknown error creating program object")))
-    }
+pub fn request_animation_frame(f: &Closure<dyn FnMut(f32)>) {
+    web_sys::window()
+        .expect("No window")
+        .request_animation_frame(f.as_ref().unchecked_ref())
+        .expect("Should register animation");
 }
