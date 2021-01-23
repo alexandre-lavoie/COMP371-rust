@@ -1,7 +1,7 @@
 use mat4;
 use web_sys::WebGl2RenderingContext;
+use crate::controller::*;
 
-#[derive(Copy, Clone)]
 pub struct Camera {
     pub position: [f32; 3],
     pub rotation: [f32; 3],
@@ -9,20 +9,32 @@ pub struct Camera {
     pub y: f32,
     pub width: f32,
     pub height: f32,
+    pub fov: f32,
+    pub near: f32,
+    pub far: f32,
+    pub aspect: f32,
+    controllers: Vec<Box<dyn Controller<Camera>>>
+}
+
+impl Default for Camera {
+    fn default() -> Self {
+        Camera {
+            position: [0., 0., 0.],
+            rotation: [0., 0., 0.],
+            x: 0.,
+            y: 0.,
+            width: 1.,
+            height: 1.,
+            fov: 30.,
+            near: 0.01,
+            far: 1000.,
+            aspect: 0.,
+            controllers: vec![]
+        }
+    }
 }
 
 impl Camera {
-    pub fn new(position: [f32; 3], rotation: [f32; 3], viewport: [f32; 4]) -> Self {
-        Camera {
-            position: position,
-            rotation: rotation,
-            x: viewport[0],
-            y: viewport[1],
-            width: viewport[2],
-            height: viewport[3],
-        }
-    }
-
     pub fn get_matrix(&self) -> [f32; 16] {
         let mut matrix = mat4::new_identity::<f32>();
 
@@ -75,14 +87,27 @@ impl Camera {
         gl.viewport(x as i32, y as i32, width as i32, height as i32);
     }
 
-    pub fn projection_matrix(&self, aspect: f32) -> [f32; 16] {
+    pub fn projection_matrix(&self) -> [f32; 16] {
         let mut matrix = mat4::new_identity::<f32>();
-        let fov = 30.0;
-        let near = 0.01;
-        let far = 1000.0;
 
-        mat4::perspective(&mut matrix, &fov, &aspect, &near, &far);
+        mat4::perspective(&mut matrix, &self.fov, &self.aspect, &self.near, &self.far);
 
         return matrix;
+    }
+}
+
+impl Controllable for Camera {
+    fn attach_controller(&mut self, controller: Box<dyn Controller<Self>>) {
+        self.controllers.push(controller);
+    }
+
+    fn update_controllers(&mut self, input: &crate::io::Input) {
+        let controllers = std::mem::replace(&mut self.controllers, vec![]);
+
+        for controller in controllers.iter() {
+            crate::utils::coerce(&controller).update(self, input);
+        }
+
+        self.controllers = controllers;
     }
 }
