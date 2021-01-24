@@ -49,3 +49,32 @@ pub fn link_program(
             .unwrap_or_else(|| String::from("Unknown error creating program object")))
     }
 }
+
+pub fn link_program_str(
+    gl: &WebGl2RenderingContext,
+    vertex_shader: &str,
+    fragment_shader: &str,
+) -> WebGlProgram {
+    let v_result = compile_shader(gl, WebGl2RenderingContext::VERTEX_SHADER, vertex_shader);
+
+    let vertex_shader = match v_result {
+        Ok(v) => v,
+        Err(s) => panic!("{:?}", s),
+    };
+
+    let f_result = compile_shader(
+        &gl,
+        WebGl2RenderingContext::FRAGMENT_SHADER,
+        fragment_shader,
+    );
+
+    let fragment_shader = match f_result {
+        Ok(f) => f,
+        Err(s) => panic!("{:?}", s),
+    };
+
+    match link_program(&gl, &vertex_shader, &fragment_shader) {
+        Ok(p) => p,
+        Err(s) => panic!("{:?}", s),
+    }
+}

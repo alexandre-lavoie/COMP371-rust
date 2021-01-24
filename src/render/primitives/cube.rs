@@ -35,7 +35,7 @@ impl Renderable for CubeRenderer {
         self.buffers = Some(Buffers::new(gl, &VERTICIES, &INDICIES, &NORMALS).unwrap());
     }
 
-    fn render(&self, gl: &web_sys::WebGl2RenderingContext, _camera: &Camera) {
+    fn render(&mut self, gl: &web_sys::WebGl2RenderingContext, _camera: &mut Camera) {
         ObjectRenderer::__render(self, gl);
     }
 }

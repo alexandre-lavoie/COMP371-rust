@@ -4,8 +4,7 @@ use crate::render::*;
 use web_sys::{WebGl2RenderingContext, WebGlProgram};
 use crate::controller::*;
 use crate::io::Input;
-use crate::engine::Camera;
-use crate::utils::*;
+use crate::engine::{Transform, Camera};
 
 #[derive(Default)]
 pub struct Cube {
@@ -13,11 +12,24 @@ pub struct Cube {
     rotation: [f32; 3],
     scale: [f32; 3],
     renderer: Option<CubeRenderer>,
-    controllers: Vec<Box<dyn Controller<Cube>>>
+    controllers: Vec<Box<dyn Controller<Cube>>>,
+    matrix: [f32; 16],
+    refresh_matrix: bool
 }
 
 impl Object for Cube {
+    fn set_program(&mut self, program: WebGlProgram) {
+        self.renderer = Some(CubeRenderer::new(program))
+    }
+
+    fn get_program(&self) -> &WebGlProgram {
+        self.renderer.as_ref().unwrap().get_program()
+    }
+}
+
+impl Transform for Cube {
     fn set_position(&mut self, position: [f32; 3]) {
+        self.refresh_matrix = true;
         self.position = position;
     }
 
@@ -26,6 +38,7 @@ impl Object for Cube {
     }
 
     fn set_rotation(&mut self, rotation: [f32; 3]) {
+        self.refresh_matrix = true;
         self.rotation = rotation;
     }
 
@@ -34,6 +47,7 @@ impl Object for Cube {
     }
 
     fn set_scale(&mut self, scale: [f32; 3]) {
+        self.refresh_matrix = true;
         self.scale = scale;
     }
 
@@ -41,8 +55,14 @@ impl Object for Cube {
         &self.scale
     }
 
-    fn set_program(&mut self, program: WebGlProgram) {
-        self.renderer = Some(CubeRenderer::new(program))
+    fn get_matrix(&mut self) -> [f32; 16] {
+        if self.refresh_matrix {
+            self.refresh_matrix = false;
+
+            self.matrix = self.calculate_matrix();
+        }
+
+        self.matrix
     }
 }
 
@@ -51,11 +71,11 @@ impl Controllable for Cube {
         self.controllers.push(controller);
     }
 
-    fn update_controllers(&mut self, input: &Input) {
+    fn update_controllers(&mut self, dt: f32, input: &Input) {
         let controllers = std::mem::replace(&mut self.controllers, vec![]);
 
         for controller in controllers.iter() {
-            crate::utils::coerce(&controller).update(self, input);
+            crate::utils::coerce(&controller).update(self, dt, input);
         }
 
         self.controllers = controllers;
@@ -69,13 +89,11 @@ impl Renderable for Cube {
         }
     }
 
-    fn render(&self, gl: &WebGl2RenderingContext, camera: &Camera) {
+    fn render(&mut self, gl: &WebGl2RenderingContext, camera: &mut Camera) {
         if self.renderer.is_some() {
-            let renderer = self.renderer.as_ref().unwrap();
+            Object::__render(self, gl, camera);
 
-            let program = renderer.get_program();
-
-            Object::__render(self, gl, program, camera);
+            let renderer = self.renderer.as_mut().unwrap();
 
             renderer.render(gl, camera);
         }

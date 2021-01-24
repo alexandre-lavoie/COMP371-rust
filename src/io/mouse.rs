@@ -72,10 +72,12 @@ impl Mouse {
         }
 
         {
+            let buttons = buttons.clone();
             let dx = dx.clone();
             let dy = dy.clone();
 
             let mouse_cb = Closure::wrap(Box::new(move |_event: MouseEvent| {
+                *buttons.borrow_mut() = 0;
                 *dx.borrow_mut() = 0;
                 *dy.borrow_mut() = 0;
             }) as Box<dyn FnMut(MouseEvent)>);

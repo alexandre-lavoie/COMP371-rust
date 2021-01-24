@@ -12,7 +12,7 @@ void main(void) {
     gl_Position = u_projection * u_view * u_world * a_position;
 
     highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
-    highp vec3 directionalLightColor = vec3(1, 1, 1);
+    highp vec3 directionalLightColor = vec3(1, 0.75, 1);
     highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
 
     highp vec4 transformedNormal = u_normal * a_normal;

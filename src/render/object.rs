@@ -17,13 +17,11 @@ pub trait ObjectRenderer: Renderable {
                 buffers.vertex.as_ref(),
             );
 
-            // let a_position = gl.get_attrib_location(program, "a_position");
+            let a_position = gl.get_attrib_location(program, "a_position");
 
-            //if a_position >= 0 {
-                // crate::log!("Position");
-
+            if a_position >= 0 {
                 gl.vertex_attrib_pointer_with_i32(
-                    0, //a_position as u32,
+                    a_position as u32,
                     3,
                     WebGl2RenderingContext::FLOAT,
                     false,
@@ -31,9 +29,8 @@ pub trait ObjectRenderer: Renderable {
                     0,
                 );
     
-                gl.enable_vertex_attrib_array(0);
-            //}
-
+                gl.enable_vertex_attrib_array(a_position as u32);
+            }
         }
 
         if buffers.normal.is_some() {
@@ -42,13 +39,11 @@ pub trait ObjectRenderer: Renderable {
                 buffers.normal.as_ref(),
             );
 
-            // let a_normal = gl.get_attrib_location(program, "a_normal");
+            let a_normal = gl.get_attrib_location(program, "a_normal");
 
-            // if a_normal >= 0 {
-                // crate::log!("Normal");
-
+            if a_normal >= 0 {
                 gl.vertex_attrib_pointer_with_i32(
-                    1, // a_normal as u32
+                    a_normal as u32,
                     3,
                     WebGl2RenderingContext::FLOAT,
                     false,
@@ -56,12 +51,9 @@ pub trait ObjectRenderer: Renderable {
                     0,
                 );
     
-                gl.enable_vertex_attrib_array(1);
-            // }
+                gl.enable_vertex_attrib_array(a_normal as u32);
+            }
         }
-
-        // crate::log!("Index");
-        
 
         gl.bind_buffer(
             WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,

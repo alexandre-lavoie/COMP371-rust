@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  env:
+    container_name: comp371-env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./www:/app/www
+      - ./resources:/app/resources
+    networks:
+      - comp371-network
+
+networks:
+  comp371-network:
+    driver: bridge

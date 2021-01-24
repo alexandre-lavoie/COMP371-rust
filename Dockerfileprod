@@ -1,0 +1,46 @@
+#
+# Builder
+#
+
+# Starting with Debian + Rust
+FROM rust:buster AS builder
+
+# Make root /app to prevent files to be places in actual root
+WORKDIR /app
+
+# NodeJS 14
+RUN curl -sL https://deb.nodesource.com/setup_14.x | sh -s -- -y
+
+# Install Nodejs
+RUN apt-get update && apt-get install -y nodejs
+
+# Install Wasm-pack
+RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh -s -- -y
+
+# Copies this folder inside the app
+COPY . .
+
+# Build wasm
+RUN cd www && npm run build-wasm
+
+# Install dependencies
+RUN cd www && npm install
+
+# Build all
+RUN cd www && npm run build
+
+#
+# Server
+#
+
+# Serving static build
+FROM nginx
+
+# Copy static dist content from builder
+COPY --from=builder /app/dist /app
+
+# Copy config
+COPY ./www/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Start nginx
+CMD sed -i -e 's/$PORT/'"$PORT"'/g' /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'

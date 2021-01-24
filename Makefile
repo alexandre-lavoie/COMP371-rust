@@ -2,11 +2,11 @@ install:
 	cd www && npm install
 
 build:
-	date
-	wasm-pack build
+	cd www && npm run build
 
 start:
-	cd www && npm run start
+	cd www && npm start
 
 clean:
 	rm -rf pkg
+	rm -rf dist

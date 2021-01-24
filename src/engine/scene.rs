@@ -36,12 +36,14 @@ impl Scene {
     }
 
     pub fn set_canvas_dimensions(&mut self, width: f32, height: f32) {
+        let aspect = width / height;
+
         for camera in self.cameras.iter_mut() {
-            camera.aspect = width / height;
+            camera.set_aspect(aspect);
         }
     }
 
-    pub fn render(&self, canvas: &HtmlCanvasElement, gl: &WebGl2RenderingContext) {
+    pub fn render(&mut self, canvas: &HtmlCanvasElement, gl: &WebGl2RenderingContext) {
         gl.enable(WebGl2RenderingContext::DEPTH_TEST);
 
         gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
@@ -58,11 +60,11 @@ impl Scene {
 
         let height = canvas.height();
 
-        for camera in self.cameras.iter() {
+        for camera in self.cameras.iter_mut() {
             camera.attach_viewport(&gl, width, height);
 
-            for box_object in self.objects.iter() {
-                let object = coerce(box_object);
+            for box_object in self.objects.iter_mut() {
+                let object = coerce_mut(box_object);
 
                 object.render(gl, camera);
             }
@@ -75,21 +77,21 @@ impl Controllable for Scene {
         self.controllers.push(controller);
     }
 
-    fn update_controllers(&mut self, input: &Input) {
+    fn update_controllers(&mut self, dt: f32, input: &Input) {
         let controllers = std::mem::replace(&mut self.controllers, vec![]);
 
         for controller in controllers.iter() {
-            crate::utils::coerce(&controller).update(self, input);
+            crate::utils::coerce(&controller).update(self, dt, input);
         }
 
         self.controllers = controllers;
 
         for object in self.objects.iter_mut() {
-            object.update_controllers(input);
+            object.update_controllers(dt, input);
         }
 
         for camera in self.cameras.iter_mut() {
-            camera.update_controllers(input);
+            camera.update_controllers(dt, input);
         }
     }
 }

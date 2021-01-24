@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  env-prod:
+    container_name: comp371-env-prod
+    build:
+      context: .
+      dockerfile: Dockerfileprod
+    ports:
+      - '8080:8080'
+    networks:
+      - comp371-prod-network
+    environment:
+      - PORT=8080
+
+networks:
+  comp371-prod-network:
+    driver: bridge
