@@ -96,6 +96,8 @@ cd www
 npm run build
 ```
 
+or
+
 ```bash
 #Docker
 sudo docker-compose -f docker-compose-prod.yml up
