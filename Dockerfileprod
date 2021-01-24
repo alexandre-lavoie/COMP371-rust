@@ -36,6 +36,9 @@ RUN cd www && npm run build
 # Serving static build
 FROM nginx
 
+# Make root /app to prevent files to be places in actual root
+WORKDIR /app
+
 # Copy static dist content from builder
 COPY --from=builder /app/dist /app
 
