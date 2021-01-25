@@ -1,15 +1,20 @@
+use crate::component::{HasComponent, Shader};
 use crate::render::{Buffers, Renderable};
-use web_sys::{WebGl2RenderingContext, WebGlProgram};
+use web_sys::WebGl2RenderingContext;
 
-pub trait ObjectRenderer: Renderable {
+pub trait ObjectRenderer: Renderable + HasComponent<Shader> {
     fn get_buffers(&self) -> &Option<Buffers>;
-    fn get_program(&self) -> &WebGlProgram;
+
     fn get_index_count(&self) -> usize;
 
     fn __render(&self, gl: &WebGl2RenderingContext) {
-        let program = self.get_program();
+        let shader: &Shader = self.get_component().unwrap();
+
+        let program = shader.get_program();
 
         let buffers = self.get_buffers().as_ref().unwrap();
+
+        gl.use_program(Some(&program));
 
         if buffers.vertex.is_some() {
             gl.bind_buffer(
@@ -28,7 +33,6 @@ pub trait ObjectRenderer: Renderable {
                     0,
                     0,
                 );
-    
                 gl.enable_vertex_attrib_array(a_position as u32);
             }
         }
@@ -50,7 +54,6 @@ pub trait ObjectRenderer: Renderable {
                     0,
                     0,
                 );
-    
                 gl.enable_vertex_attrib_array(a_normal as u32);
             }
         }

@@ -1,21 +1,21 @@
-mod primitives;
+use crate::*;
+use web_sys::WebGlProgram;
 
-use crate::controller::Controllable;
-use crate::engine::Camera;
-use crate::engine::Transform;
-use crate::render::Renderable;
-use mat4;
-pub use primitives::*;
-use web_sys::{WebGl2RenderingContext, WebGlProgram};
+pub trait ObjectModel: HasComponents + HasControllers + HasComponent<Transform> + HasComponent<Shader> {
+    fn init_renderer(&mut self, gl: &web_sys::WebGl2RenderingContext);
 
-pub trait Object: Renderable + Controllable + Transform {
-    fn set_program(&mut self, program: WebGlProgram);
+    fn render_renderer(&mut self, gl: &web_sys::WebGl2RenderingContext, camera: &CameraRenderer);
 
     fn get_program(&self) -> &WebGlProgram;
+    
+    fn init(&mut self, gl: &web_sys::WebGl2RenderingContext) {
+        self.init_renderer(gl);
+    }
 
-    fn __render(&mut self, gl: &WebGl2RenderingContext, camera: &mut Camera) {
+    fn render(&mut self, gl: &web_sys::WebGl2RenderingContext, camera: &CameraRenderer) {
         let projection_matrix = camera.get_projection_matrix();
-        let world_matrix = self.get_matrix();
+        let transform: &Transform = self.get_component().unwrap();
+        let world_matrix = transform.get_matrix();
         let view_matrix = camera.get_camera_matrix();
         let mut normal_matrix = mat4::new_identity::<f32>();
         mat4::inv(&mut normal_matrix, &world_matrix);
@@ -37,5 +37,7 @@ pub trait Object: Renderable + Controllable + Transform {
 
         let normal = gl.get_uniform_location(program, "u_normal");
         gl.uniform_matrix4fv_with_f32_array(normal.as_ref(), false, &normal_matrix);
+
+        self.render_renderer(gl, camera);
     }
 }

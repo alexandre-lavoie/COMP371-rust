@@ -1,36 +1,29 @@
-use crate::controller::*;
-use crate::engine::Camera;
-use crate::io::Input;
-use crate::objects::Object;
-use crate::utils::*;
+use crate::component::{HasComponents, Children, HasComponent};
+use crate::controller::HasControllers;
+use crate::model::{CameraModel, ObjectModel};
+use crate::render::Renderable;
+use wasm_bindgen::JsCast;
 use web_sys::{HtmlCanvasElement, WebGl2RenderingContext};
 
 #[derive(Default)]
 pub struct Scene {
-    objects: Vec<Box<dyn Object>>,
-    cameras: Vec<Camera>,
-    controllers: Vec<Box<dyn Controller<Scene>>>,
+    objects: Children<Box<dyn ObjectModel>>,
+    cameras: Children<Box<dyn CameraModel>>,
 }
 
 impl Scene {
-    pub fn get_objects(&self) -> &Vec<Box<dyn Object>> {
-        &self.objects
-    }
-
-    pub fn get_cameras(&self) -> &Vec<Camera> {
-        &self.cameras
-    }
-
-    pub fn attach_object(&mut self, object: Box<dyn Object>) {
+    pub fn push_object(&mut self, object: Box<dyn ObjectModel>) {
         self.objects.push(object);
     }
-
-    pub fn attach_camera(&mut self, camera: Camera) {
+    
+    pub fn push_camera(&mut self, camera: Box<dyn CameraModel>) {
         self.cameras.push(camera);
     }
 
     pub fn init(&mut self, gl: &WebGl2RenderingContext) {
-        for object in self.objects.iter_mut() {
+        for box_object in self.objects.iter_mut() {
+            let object = box_object.as_mut();
+
             object.init(gl);
         }
     }
@@ -39,7 +32,7 @@ impl Scene {
         let aspect = width / height;
 
         for camera in self.cameras.iter_mut() {
-            camera.set_aspect(aspect);
+            camera.as_mut().get_renderer_mut().set_aspect(aspect);
         }
     }
 
@@ -61,37 +54,45 @@ impl Scene {
         let height = canvas.height();
 
         for camera in self.cameras.iter_mut() {
-            camera.attach_viewport(&gl, width, height);
+            camera.as_mut().get_renderer_mut().set_canvas_max(width, height);
+
+            camera.update_matrix();
+        }
+
+        for camera in self.cameras.iter_mut() {
+            let camera_renderer = camera.as_ref().get_renderer();
+
+            camera_renderer.attach_viewport(gl);
 
             for box_object in self.objects.iter_mut() {
-                let object = coerce_mut(box_object);
-
-                object.render(gl, camera);
+                let object = box_object.as_mut();
+    
+                object.render(gl, camera_renderer);
             }
         }
     }
 }
 
-impl Controllable for Scene {
-    fn attach_controller(&mut self, controller: Box<dyn Controller<Self>>) {
-        self.controllers.push(controller);
-    }
-
-    fn update_controllers(&mut self, dt: f32, input: &Input) {
-        let controllers = std::mem::replace(&mut self.controllers, vec![]);
-
-        for controller in controllers.iter() {
-            crate::utils::coerce(&controller).update(self, dt, input);
+impl HasComponents for Scene {
+    fn update_components(&mut self, dt: f32) {
+        for camera in self.cameras.iter_mut() {
+            camera.as_mut().update_components(dt);
         }
-
-        self.controllers = controllers;
 
         for object in self.objects.iter_mut() {
-            object.update_controllers(dt, input);
+            object.as_mut().update_components(dt);
+        }
+    }
+}
+
+impl HasControllers for Scene {
+    fn update_controllers(&mut self, dt: f32) {
+        for camera in self.cameras.iter_mut() {
+            camera.as_mut().update_controllers(dt);
         }
 
-        for camera in self.cameras.iter_mut() {
-            camera.update_controllers(dt, input);
+        for object in self.objects.iter_mut() {
+            object.as_mut().update_controllers(dt);
         }
     }
 }

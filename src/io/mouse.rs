@@ -12,7 +12,7 @@ pub enum MouseButton {
     FIFTH,
 }
 
-#[derive(Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Mouse {
     buttons: Rc<RefCell<u16>>,
     dx: Rc<RefCell<i32>>,

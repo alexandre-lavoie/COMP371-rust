@@ -1,13 +1,13 @@
-use crate::io::Input;
-
-pub trait Controllable {
-    fn attach_controller(&mut self, controller: Box<dyn Controller<Self>>)
-    where
-        Self: Sized;
-
-    fn update_controllers(&mut self, dt: f32, input: &Input);
+pub trait HasControllers {
+    fn update_controllers(&mut self, dt: f32);
 }
 
-pub trait Controller<T: Controllable> {
-    fn update(&self, parent: &mut T, dt: f32, input: &Input);
+pub trait HasController<S: HasControllers, T: Controller<S>>: HasControllers {
+    fn attach_controller(&mut self, controller: T);
+
+    fn get_controller(&self) -> &T;
+}
+
+pub trait Controller<P: HasControllers> {
+    fn update(&mut self, parent: &mut P, dt: f32);
 }

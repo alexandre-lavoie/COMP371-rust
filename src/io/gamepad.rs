@@ -1,4 +1,2 @@
-#[derive(Clone)]
-pub struct Gamepad {
-
-}
+#[derive(Default, Clone, Debug)]
+pub struct Gamepad {}

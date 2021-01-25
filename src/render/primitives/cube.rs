@@ -1,19 +1,10 @@
-use crate::engine::Camera;
-use crate::render::{Buffers, ObjectRenderer, Renderable};
-use web_sys::WebGlProgram;
+use crate::render::{Buffers, ObjectRenderer, Renderable, CameraRenderer};
+use crate::component::{HasComponent, Shader, HasComponents};
 
+#[derive (Clone, Default, Debug)]
 pub struct CubeRenderer {
-    program: WebGlProgram,
+    shader: Shader,
     buffers: Option<Buffers>
-}
-
-impl CubeRenderer {
-    pub fn new(program: WebGlProgram) -> Self {
-        CubeRenderer {
-            program: program.clone(),
-            buffers: None
-        }
-    }
 }
 
 impl ObjectRenderer for CubeRenderer {
@@ -21,12 +12,28 @@ impl ObjectRenderer for CubeRenderer {
         &self.buffers
     }
 
-    fn get_program(&self) -> &WebGlProgram {
-        &self.program
-    }
-
     fn get_index_count(&self) -> usize {
         INDICIES.len()
+    }
+}
+
+impl HasComponents for CubeRenderer {
+    fn update_components(&mut self, dt: f32) {
+
+    }
+}
+
+impl HasComponent<Shader> for CubeRenderer {
+    fn get_component(&self) -> Result<&Shader, &'static str> {
+        Ok(&self.shader)
+    }
+
+    fn get_component_mut(&mut self) -> Result<&mut Shader, &'static str> {
+        Ok(&mut self.shader)
+    }
+
+    fn attach_component(&mut self, shader: Shader) {
+        self.shader = shader;
     }
 }
 
@@ -35,7 +42,7 @@ impl Renderable for CubeRenderer {
         self.buffers = Some(Buffers::new(gl, &VERTICIES, &INDICIES, &NORMALS).unwrap());
     }
 
-    fn render(&mut self, gl: &web_sys::WebGl2RenderingContext, _camera: &mut Camera) {
+    fn render(&mut self, gl: &web_sys::WebGl2RenderingContext, _camera: &CameraRenderer) {
         ObjectRenderer::__render(self, gl);
     }
 }
