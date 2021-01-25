@@ -4,7 +4,7 @@ use web_sys::WebGlProgram;
 pub trait ObjectModel: HasComponents + HasControllers + HasComponent<Transform> + HasComponent<Shader> {
     fn init_renderer(&mut self, gl: &web_sys::WebGl2RenderingContext);
 
-    fn render_renderer(&mut self, gl: &web_sys::WebGl2RenderingContext, camera: &CameraRenderer);
+    fn render_renderer(&mut self, gl: &web_sys::WebGl2RenderingContext, camera: &mut CameraRenderer);
 
     fn get_program(&self) -> &WebGlProgram;
     
@@ -12,7 +12,7 @@ pub trait ObjectModel: HasComponents + HasControllers + HasComponent<Transform> 
         self.init_renderer(gl);
     }
 
-    fn render(&mut self, gl: &web_sys::WebGl2RenderingContext, camera: &CameraRenderer) {
+    fn render(&mut self, gl: &web_sys::WebGl2RenderingContext, camera: &mut CameraRenderer) {
         let projection_matrix = camera.get_projection_matrix();
         let transform: &Transform = self.get_component().unwrap();
         let world_matrix = transform.get_matrix();

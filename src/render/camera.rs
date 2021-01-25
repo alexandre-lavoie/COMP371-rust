@@ -12,6 +12,7 @@ pub struct CameraRenderer {
     projection_matrix: [f32; 16],
     max_width: u32,
     max_height: u32,
+    projection_update: bool,
 }
 
 impl Default for CameraRenderer {
@@ -26,12 +27,17 @@ impl Default for CameraRenderer {
             projection_matrix: [0f32; 16],
             max_width: 1920u32,
             max_height: 1080u32,
+            projection_update: true
         }
     }
 }
 
 impl CameraRenderer {
     pub fn set_fov(&mut self, fov: f32) {
+        if self.fov != fov {
+            self.projection_update = true;
+        }
+        
         self.fov = fov;
     }
 
@@ -40,6 +46,10 @@ impl CameraRenderer {
     }
 
     pub fn set_aspect(&mut self, aspect: f32) {
+        if self.aspect != aspect {
+            self.projection_update = true;
+        }
+        
         self.aspect = aspect;
     }
 
@@ -48,6 +58,10 @@ impl CameraRenderer {
     }
 
     pub fn set_near(&mut self, near: f32) {
+        if self.near != near {
+            self.projection_update = true;
+        }
+        
         self.near = near;
     }
 
@@ -56,6 +70,10 @@ impl CameraRenderer {
     }
 
     pub fn set_far(&mut self, far: f32) {
+        if self.far != far {
+            self.projection_update = true;
+        }
+        
         self.far = far
     }
 
@@ -68,6 +86,10 @@ impl CameraRenderer {
     }
 
     pub fn set_canvas_max(&mut self, width: u32, height: u32) {
+        if self.max_width != width || self.max_height != height {
+            self.projection_update = true;
+        }
+
         self.max_width = width;
         self.max_height = height;
     }
@@ -84,7 +106,13 @@ impl CameraRenderer {
         self.camera_matrix
     }
 
-    pub fn get_projection_matrix(&self) -> [f32; 16] {
+    pub fn get_projection_matrix(&mut self) -> [f32; 16] {
+        if self.projection_update {
+            self.projection_update = false;
+
+            self.update_projection_matrix();
+        }
+
         self.projection_matrix
     }
 
@@ -148,7 +176,7 @@ impl Renderable for CameraRenderer {
         self.projection_matrix = self.calculate_projection_matrix();
     }
 
-    fn render(&mut self, gl: &WebGl2RenderingContext, camera: &CameraRenderer) {
+    fn render(&mut self, gl: &WebGl2RenderingContext, camera: &mut CameraRenderer) {
         panic!("Should not render camera.");
     }
 }

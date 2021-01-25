@@ -15,7 +15,7 @@ use web_sys::{WebGl2RenderingContext};
 pub trait Renderable {
     fn init(&mut self, gl: &WebGl2RenderingContext);
 
-    fn render(&mut self, gl: &WebGl2RenderingContext, camera: &CameraRenderer);
+    fn render(&mut self, gl: &WebGl2RenderingContext, camera: &mut CameraRenderer);
 }
 
 pub trait RenderableClone {

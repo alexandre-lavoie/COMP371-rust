@@ -60,7 +60,7 @@ impl Scene {
         }
 
         for camera in self.cameras.iter_mut() {
-            let camera_renderer = camera.as_ref().get_renderer();
+            let camera_renderer = camera.as_mut().get_renderer_mut();
 
             camera_renderer.attach_viewport(gl);
 

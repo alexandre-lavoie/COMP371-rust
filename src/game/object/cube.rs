@@ -14,7 +14,7 @@ impl ObjectModel for Cube {
         self.renderer.init(gl);
     }
 
-    fn render_renderer(&mut self, gl: &web_sys::WebGl2RenderingContext, camera: &CameraRenderer) {
+    fn render_renderer(&mut self, gl: &web_sys::WebGl2RenderingContext, camera: &mut CameraRenderer) {
         self.renderer.render(gl, camera);
     }
 

@@ -9,7 +9,9 @@ pub struct CubeRenderer {
 
 impl ObjectRenderer for CubeRenderer {
     fn get_buffers(&self) -> &Option<Buffers> {
-        &self.buffers
+        unsafe {
+            &BUFFERS
+        }
     }
 
     fn get_index_count(&self) -> usize {
@@ -39,13 +41,19 @@ impl HasComponent<Shader> for CubeRenderer {
 
 impl Renderable for CubeRenderer {
     fn init(&mut self, gl: &web_sys::WebGl2RenderingContext) {
-        self.buffers = Some(Buffers::new(gl, &VERTICIES, &INDICIES, &NORMALS).unwrap());
+        unsafe {
+            if BUFFERS.is_none() {
+                BUFFERS = Some(Buffers::new(gl, &VERTICIES, &INDICIES, &NORMALS).unwrap());
+            }
+        }
     }
 
-    fn render(&mut self, gl: &web_sys::WebGl2RenderingContext, _camera: &CameraRenderer) {
+    fn render(&mut self, gl: &web_sys::WebGl2RenderingContext, _camera: &mut CameraRenderer) {
         ObjectRenderer::__render(self, gl);
     }
 }
+
+static mut BUFFERS: Option<Buffers> = None;
 
 static VERTICIES: [f32; 72] = [
     // Front face
